@@ -1,0 +1,143 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS AppSync App Example
+
+Resources:
+  BooksAppBookTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'booksapp-books-table'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: title
+          AttributeType: S
+        - AttributeName: author
+          AttributeType: S
+      KeySchema:
+        - AttributeName: title
+          KeyType: HASH
+        - AttributeName: author
+          KeyType: RANGE
+
+  BooksAppDynamoDBRole:
+    Type: 'AWS::IAM::Role'
+    DependsOn: BooksAppDynamoDBPolicy
+    Properties:
+      RoleName: 'books-app-dynamodb-role'
+      ManagedPolicyArns:
+      - Ref: BooksAppDynamoDBPolicy
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - sts:AssumeRole
+          Principal:
+            Service:
+            - appsync.amazonaws.com
+
+  BooksAppDynamoDBPolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Managed policy for books app to access dynamodb table'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:DeleteItem
+          - dynamodb:UpdateItem
+          - dynamodb:Query
+          - dynamodb:Scan
+          - dynamodb:BatchGetItem
+          - dynamodb:BatchWriteItem
+          Resource: !Join [ '', [ !GetAtt BooksAppBookTable.Arn, '*' ] ]
+  
+  BooksAppGraphQLApi:
+    Type: 'AWS::AppSync::GraphQLApi'
+    Description: 'GraphQL API for example app'
+    Properties:
+      Name: 'books-app-graphql-api'
+      AuthenticationType: API_KEY
+
+  BooksAppSchema:
+    Type: 'AWS::AppSync::GraphQLSchema'
+    Description: 'GraphQL Schema for example app'
+    Properties:
+      ApiId: !GetAtt BooksAppGraphQLApi.ApiId
+      Definition: |
+        type Book {
+          title: String
+          author: String
+        }
+        type Query {
+          allBooks: [Book]
+        }
+        input BookInput {
+          title: String
+          author: String
+        }
+        type Mutation {
+          createBook(input: BookInput): Book
+        }
+        type Subscription {
+          newBook: Book!
+        }
+
+  BooksAppDataSource:
+    Type: 'AWS::AppSync::DataSource'
+    Properties:
+      ApiId: !GetAtt BooksAppGraphQLApi.ApiId
+      Name: bookapp_books_table
+      Description: 'Books app data source'
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt BooksAppDynamoDBRole.Arn
+      DynamoDBConfig:
+        TableName: !Ref BooksAppBookTable
+        AwsRegion: 'ap-southeast-1'
+
+  QueryGetBooksResolver:
+    Type: 'AWS::AppSync::Resolver'
+    DependsOn: BooksAppSchema
+    Properties:
+      ApiId: !GetAtt BooksAppGraphQLApi.ApiId
+      TypeName: Query
+      FieldName: allBooks
+      DataSourceName: !GetAtt BooksAppDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2017-02-28",
+          "operation": "Scan",
+          #if( $ctx.args.count )
+            "limit": $ctx.args.count,
+          #end
+          #if( ${ctx.args.nextToken} )
+            "nextToken": "${ctx.args.nextToken}"
+          #end
+        }
+      ResponseMappingTemplate: |
+        {
+          "posts": $utils.toJson($ctx.result.items),
+          #if( ${ctx.result.nextToken} )
+              "nextToken": "${ctx.result.nextToken}",
+          #end
+        }
+
+# Outputs:
+#   BooksAppGraphQLApiArn:
+#     Description: 'The App ID of the GraphQL endpoint'
+#     Value: !Ref BooksAppGraphQLApi.Arn
+#   BooksAppGraphQLApi:
+#     Description: 'The App ID of the GraphQL endpoint'
+#     Value: !Ref BooksAppGraphQLApi.ApiId
+#   BooksAppGraphQLEndpoint:
+#     Description: The URL for the GraphQL endpoint.
+#     Value: !GetAtt BooksAppGraphQLApi.GraphQLUrl
+#   BooksAppDataSourceArn:
+#     Description: The ARN for the Books App DynamoDB table DataSource.
+#     Value: !Ref BooksAppDataSource.Arn
+#   BooksAppDataSourceName:
+#     Description: The ARN for the Books App DynamoDB table DataSource.
+#     Value: !GetAtt BooksAppDataSource.Name
