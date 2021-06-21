@@ -57,14 +57,20 @@ Resources:
   
   BooksAppGraphQLApi:
     Type: 'AWS::AppSync::GraphQLApi'
-    Description: 'GraphQL API for example app'
+    Description: 'GraphQL API for books app'
     Properties:
       Name: 'books-app-graphql-api'
       AuthenticationType: API_KEY
 
+  BooksAppGraphQLApiKey:
+    Type: 'AWS::AppSync::ApiKey'
+    Description: 'GraphQL API key'
+    Properties:
+      ApiId: !GetAtt BooksAppGraphQLApi.ApiId
+
   BooksAppSchema:
     Type: 'AWS::AppSync::GraphQLSchema'
-    Description: 'GraphQL Schema for example app'
+    Description: 'GraphQL Schema for books app'
     Properties:
       ApiId: !GetAtt BooksAppGraphQLApi.ApiId
       Definition: |
@@ -119,7 +125,7 @@ Resources:
         }
       ResponseMappingTemplate: |
         {
-          "posts": $utils.toJson($ctx.result.items),
+          "allBooks": $utils.toJson($ctx.result.items),
           #if( ${ctx.result.nextToken} )
               "nextToken": "${ctx.result.nextToken}",
           #end

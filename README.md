@@ -12,7 +12,7 @@ aws cloudformation create-stack --stack-name books-app-stack --template-body fil
 
 - Update stack
 ```
-aws cloudformation update-stack --stack-name books-app-stack
+aws cloudformation update-stack --stack-name books-app-stack --template-body file://books-app.template --capabilities CAPABILITY_NAMED_IAM
 ```
 
 - Delete stack
