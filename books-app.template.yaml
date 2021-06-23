@@ -134,6 +134,30 @@ Resources:
               "nextToken": "${ctx.result.nextToken}",
           #end
         }
+  
+  MutationCreateBookResolver:
+    Type: 'AWS::AppSync::Resolver'
+    DependsOn: BooksAppSchema
+    Properties:
+      ApiId: !GetAtt BooksAppGraphQLApi.ApiId
+      TypeName: Mutation
+      FieldName: createBook
+      DataSourceName: !GetAtt BooksAppDataSource.Name
+      RequestMappingTemplate: |
+
+        {
+          "version": "2017-02-28",
+          "operation": "PutItem",
+          "key": {
+            "title": $util.dynamodb.toDynamoDBJson($ctx.args.input.title),
+            "author": $util.dynamodb.toDynamoDBJson($ctx.args.input.author)
+          },
+          "attributeValues": {
+            "title": $util.dynamodb.toDynamoDBJson($ctx.args.input.title),
+            "author": $util.dynamodb.toDynamoDBJson($ctx.args.input.author)
+          }
+        }
+      ResponseMappingTemplate: "$util.toJson($ctx.result)"
 
 # Outputs:
 #   BooksAppGraphQLApiArn:
