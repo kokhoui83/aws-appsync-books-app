@@ -78,8 +78,12 @@ Resources:
           title: String
           author: String
         }
+        type PaginatedBooks {
+          books: [Book]
+          nextToken: String
+        }
         type Query {
-          allBooks: [Book]
+          allBooks: PaginatedBooks
         }
         input BookInput {
           title: String
@@ -125,7 +129,7 @@ Resources:
         }
       ResponseMappingTemplate: |
         {
-          "allBooks": $utils.toJson($ctx.result.items),
+          "books": $utils.toJson($ctx.result.items),
           #if( ${ctx.result.nextToken} )
               "nextToken": "${ctx.result.nextToken}",
           #end
