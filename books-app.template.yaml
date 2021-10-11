@@ -94,7 +94,7 @@ Resources:
         }
         type Subscription {
           newBook: Book
-          @aws_subscribe(mutations: ["createBook"])
+            @aws_subscribe(mutations: ["createBook"])
         }
 
   BooksAppDataSource:

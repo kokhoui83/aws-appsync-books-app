@@ -21,4 +21,4 @@ aws cloudformation delete-stack --stack-name books-app-stack
 ```
 
 #### Note
-- Subscription response cannot be mandatory field
+- Subscriptions response cannot be mandatory field
