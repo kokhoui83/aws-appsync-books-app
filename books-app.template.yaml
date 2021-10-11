@@ -93,7 +93,8 @@ Resources:
           createBook(input: BookInput): Book
         }
         type Subscription {
-          newBook: Book!
+          newBook: Book
+            @aws_subscribe(mutations: ["createBook"])
         }
 
   BooksAppDataSource:

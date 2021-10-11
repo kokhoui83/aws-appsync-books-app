@@ -19,3 +19,6 @@ aws cloudformation update-stack --stack-name books-app-stack --template-body fil
 ```
 aws cloudformation delete-stack --stack-name books-app-stack
 ```
+
+#### Note
+- Subscriptions response cannot be mandatory field
